@@ -1,43 +1,65 @@
-import os
-import numpy as np
 import joblib
-from app.schemas.segment import CustomerInput, SegmentOutput
+import json
+import numpy as np
+from pathlib import Path
 
-MODEL_PATH = os.getenv("MODEL_PATH", "models/segment_model.joblib")
+BASE_DIR = Path(__file__).parent
 
-_model = None
+kmeans = joblib.load(BASE_DIR / 'kmeans_geekcommerce.joblib')
+scaler = joblib.load(BASE_DIR / 'scaler_geekcommerce.joblib')
 
-SEGMENT_LABELS = {0: "Low Value", 1: "Mid Value", 2: "High Value"}
+with open(BASE_DIR / 'playbook.json', encoding='utf-8') as f:
+    playbook = json.load(f)
 
+CLUSTER_MAP = {
+    2: 'Campeões',
+    3: 'Em Risco',
+    0: 'Recorrentes / Promissores',
+    1: 'Hibernando / Perdidos'
+}
 
-def _load_model():
-    global _model
-    if _model is None and os.path.exists(MODEL_PATH):
-        _model = joblib.load(MODEL_PATH)
-    return _model
+FATURAMENTO_TOTAL = 17_743_429.18
+POTENCIAL_INCREMENTAL = 2_695_043.28
 
+def predict_segment(recency: float, frequency: float, monetary: float) -> dict:
+    log_values = np.log1p([[recency, frequency, monetary]])
+    scaled = scaler.transform(log_values)
+    cluster = int(kmeans.predict(scaled)[0])
+    persona = CLUSTER_MAP[cluster]
+    info = playbook[persona]
+    return {
+        'cluster': cluster,
+        'persona': persona,
+        'acao': info['Ação Recomendada'],
+        'metrica': info['Métrica de Sucesso'],
+        'impacto_estimado': info['Impacto Financeiro Estimado (£)'],
+        'recencia_media': info['Recência Média (Dias)'],
+        'frequencia_media': info['Frequência Média'],
+        'valor_medio': info['Valor Monetário Médio (£)'],
+        'qtd_clientes': info['Qtd Clientes'],
+    }
 
-def predict_segment(customer: CustomerInput) -> SegmentOutput:
-    model = _load_model()
-    features = np.array([[customer.recency, customer.frequency, customer.monetary]])
+def get_summary() -> dict:
+    segmentos = []
 
-    if model is not None:
-        segment_id = int(model.predict(features)[0])
-        proba = model.predict_proba(features)[0]
-        confidence = float(proba[segment_id])
-    else:
-        # Fallback rule-based segmentation when no model is trained yet
-        score = customer.frequency * customer.monetary / max(customer.recency, 1)
-        if score > 500:
-            segment_id, confidence = 2, 0.85
-        elif score > 100:
-            segment_id, confidence = 1, 0.75
-        else:
-            segment_id, confidence = 0, 0.80
+    for persona, info in playbook.items():
+        cluster_id = [k for k, v in CLUSTER_MAP.items() if v == persona][0]
+        segmentos.append({
+            'cluster': cluster_id,
+            'persona': persona,
+            'acao': info['Ação Recomendada'],
+            'metrica': info['Métrica de Sucesso'],
+            'impacto_estimado': info['Impacto Financeiro Estimado (£)'],
+            'recencia_media': info['Recência Média (Dias)'],
+            'frequencia_media': info['Frequência Média'],
+            'valor_medio': info['Valor Monetário Médio (£)'],
+            'qtd_clientes': info['Qtd Clientes'],
+        })
 
-    return SegmentOutput(
-        customer_id=customer.customer_id,
-        segment_id=segment_id,
-        segment_label=SEGMENT_LABELS[segment_id],
-        confidence=confidence,
-    )
+    return {
+        'faturamento_total': FATURAMENTO_TOTAL,
+        'potencial_incremental': POTENCIAL_INCREMENTAL,
+        'upside_percentual': round((POTENCIAL_INCREMENTAL / FATURAMENTO_TOTAL) * 100, 1),
+        'total_clientes': sum(s['qtd_clientes'] for s in segmentos),
+        'segmentos': segmentos,
+    }

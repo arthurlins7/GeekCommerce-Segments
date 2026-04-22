@@ -1,15 +1,25 @@
-from pydantic import BaseModel, Field
-
+from pydantic import BaseModel
+from typing import Optional
 
 class CustomerInput(BaseModel):
-    customer_id: str = Field(..., example="C001")
-    recency: int = Field(..., ge=0, description="Days since last purchase")
-    frequency: int = Field(..., ge=0, description="Number of purchases")
-    monetary: float = Field(..., ge=0, description="Total spend in BRL")
+    recency: float
+    frequency: float
+    monetary: float
 
+class SegmentResult(BaseModel):
+    cluster: int
+    persona: str
+    acao: str
+    metrica: str
+    impacto_estimado: float
+    recencia_media: float
+    frequencia_media: float
+    valor_medio: float
+    qtd_clientes: int
 
-class SegmentOutput(BaseModel):
-    customer_id: str
-    segment_id: int
-    segment_label: str
-    confidence: float
+class SummaryResult(BaseModel):
+    faturamento_total: float
+    potencial_incremental: float
+    upside_percentual: float
+    total_clientes: int
+    segmentos: list[SegmentResult]

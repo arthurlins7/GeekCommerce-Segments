@@ -1,0 +1,46 @@
+{
+  "Campeões": {
+    "Cluster": 2,
+    "Qtd Clientes": 982,
+    "Faturamento Total (£)": 10896360.52,
+    "Ação Recomendada": "Programa VIP exclusivo: acesso antecipado a lançamentos, frete grátis e cashback em compras acima do ticket médio atual",
+    "Métrica de Sucesso": "Retenção em 90 dias ≥ 85% + aumento de 10% no ticket médio",
+    "Impacto Financeiro Estimado (£)": 926190.64,
+    "Recência Média (Dias)": 10.59,
+    "Frequência Média": 19.33,
+    "Valor Monetário Médio (£)": 11096.09
+  },
+  "Em Risco": {
+    "Cluster": 3,
+    "Qtd Clientes": 1193,
+    "Faturamento Total (£)": 4377973.55,
+    "Ação Recomendada": "Cupom de reativação agressivo (15–20% de desconto) com urgência: validade de 7 dias",
+    "Métrica de Sucesso": "Taxa de reativação ≥ 15% em 30 dias",
+    "Impacto Financeiro Estimado (£)": 656696.39,
+    "Recência Média (Dias)": 117.41,
+    "Frequência Média": 8.35,
+    "Valor Monetário Médio (£)": 3669.72
+  },
+  "Recorrentes / Promissores": {
+    "Cluster": 0,
+    "Qtd Clientes": 1313,
+    "Faturamento Total (£)": 1039245.37,
+    "Ação Recomendada": "Campanha de upsell por e-mail: \"Quem comprou X também levou Y\" + bundle com desconto progressivo",
+    "Métrica de Sucesso": "Aumento do ticket médio de £791 para £1.100+ em 60 dias",
+    "Impacto Financeiro Estimado (£)": 1069261.0,
+    "Recência Média (Dias)": 36.9,
+    "Frequência Média": 2.64,
+    "Valor Monetário Médio (£)": 791.5
+  },
+  "Hibernando / Perdidos": {
+    "Cluster": 1,
+    "Qtd Clientes": 2390,
+    "Faturamento Total (£)": 1429849.74,
+    "Ação Recomendada": "E-mail em massa de baixo custo: oferta única com desconto fixo. Sem personalização — ROI é o critério",
+    "Métrica de Sucesso": "Taxa de resposta ≥ 3% — qualquer coisa abaixo disso, encerra a campanha",
+    "Impacto Financeiro Estimado (£)": 42895.24,
+    "Recência Média (Dias)": 411.93,
+    "Frequência Média": 1.91,
+    "Valor Monetário Médio (£)": 598.26
+  }
+}
