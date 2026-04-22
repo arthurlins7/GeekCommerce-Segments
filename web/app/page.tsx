@@ -2,171 +2,94 @@ import Link from 'next/link'
 import { getSummary } from './lib/api'
 import { formatCurrency, formatNumber, PERSONA_CONFIG } from './lib/utils'
 
-export default async function Home() {
-  const summary = await getSummary()
+export const dynamic = 'force-dynamic'
+export const fetchCache = 'force-no-store'
 
-  const kpis = [
-    { label: 'Faturamento Total', value: formatCurrency(summary.faturamento_total) },
-    { label: 'Potencial Incremental', value: formatCurrency(summary.potencial_incremental) },
-    { label: 'Upside Estimado', value: `+${summary.upside_percentual}%` },
-    { label: 'Clientes Analisados', value: formatNumber(summary.total_clientes) },
-  ]
+export default async function Home() {
+  let summary
+  try {
+    summary = await getSummary()
+  } catch {
+    return (
+      <main className="min-h-screen p-8 max-w-6xl mx-auto flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-slate-500 text-sm mb-2">Aguardando API inicializar...</p>
+          <p className="text-slate-600 text-xs">O servidor pode levar até 50s para acordar no plano gratuito.</p>
+          <a href="/" className="mt-4 inline-block text-blue-400 text-sm hover:underline">Tentar novamente →</a>
+        </div>
+      </main>
+    )
+  }
 
   return (
-    <div style={{ minHeight: '100vh' }}>
+    <main className="min-h-screen p-8 max-w-6xl mx-auto">
+      <div className="mb-10">
+        <p className="text-xs font-medium tracking-widest text-slate-500 uppercase mb-1">GeekCommerce</p>
+        <h1 className="text-3xl font-bold text-white">Segmentação de Clientes</h1>
+        <p className="text-slate-400 mt-1">RFM + K-Means Clustering · {formatNumber(summary.total_clientes)} clientes analisados</p>
+      </div>
 
-      {/* Top accent line */}
-      <div style={{ height: 1, background: 'linear-gradient(90deg, transparent 0%, #38bdf8 35%, #22c55e 65%, transparent 100%)' }} />
-
-      <main style={{ maxWidth: 1100, margin: '0 auto', padding: '56px 32px' }}>
-
-        {/* Header */}
-        <header style={{ marginBottom: 56 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
-            <div style={{ width: 5, height: 5, borderRadius: '50%', background: '#38bdf8', flexShrink: 0 }} />
-            <span style={{ fontSize: 10, fontFamily: 'ui-monospace, monospace', letterSpacing: '0.2em', color: 'var(--text-3)', textTransform: 'uppercase' }}>
-              GeekCommerce · RFM Analysis
-            </span>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
+        {[
+          { label: 'Faturamento Total', value: formatCurrency(summary.faturamento_total) },
+          { label: 'Potencial Incremental', value: formatCurrency(summary.potencial_incremental) },
+          { label: 'Upside Estimado', value: `${summary.upside_percentual}%` },
+          { label: 'Total de Clientes', value: formatNumber(summary.total_clientes) },
+        ].map(({ label, value }) => (
+          <div key={label} className="bg-slate-900 border border-slate-800 rounded-xl p-5">
+            <p className="text-xs text-slate-500 mb-1">{label}</p>
+            <p className="text-2xl font-semibold text-white">{value}</p>
           </div>
-          <h1 style={{ fontSize: '2.6rem', fontWeight: 700, letterSpacing: '-0.03em', color: 'var(--text-1)', lineHeight: 1.1, marginBottom: 10 }}>
-            Segmentação de Clientes
-          </h1>
-          <p style={{ color: 'var(--text-2)', fontSize: '0.875rem' }}>
-            K-Means Clustering · {formatNumber(summary.total_clientes)} clientes analisados
-          </p>
-        </header>
+        ))}
+      </div>
 
-        {/* KPI Bar */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 1, background: 'var(--border)', borderRadius: 12, overflow: 'hidden', marginBottom: 52 }}>
-          {kpis.map(({ label, value }) => (
-            <div key={label} style={{ background: 'var(--surface)', padding: '20px 24px' }}>
-              <p style={{ fontSize: 10, fontFamily: 'ui-monospace, monospace', letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-3)', marginBottom: 8 }}>
-                {label}
+      <h2 className="text-sm font-medium tracking-widest text-slate-500 uppercase mb-4">Segmentos</h2>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {summary.segmentos.map((seg) => {
+          const config = PERSONA_CONFIG[seg.persona] ?? {
+            color: 'text-white', bg: 'bg-slate-800', border: 'border-slate-700',
+            badge: 'bg-slate-700', badgeText: 'text-slate-300', emoji: '', priority: '',
+            accentColor: '#64748b', priorityNum: '',
+          }
+          return (
+            <Link
+              key={seg.cluster}
+              href={`/segment/${encodeURIComponent(seg.persona)}`}
+              className={`group block rounded-xl border p-6 transition-all hover:scale-[1.01] ${config.bg} ${config.border}`}
+            >
+              <div className="flex items-start justify-between mb-4">
+                <span className={`text-lg font-bold ${config.color}`}>{seg.persona}</span>
+                <span className={`text-xs px-2 py-1 rounded-full font-medium ${config.badge} ${config.badgeText}`}>
+                  {config.priority}
+                </span>
+              </div>
+              <div className="grid grid-cols-2 gap-3 mb-4">
+                <div>
+                  <p className="text-xs text-slate-500 mb-0.5">Clientes</p>
+                  <p className="text-lg font-semibold text-white">{formatNumber(seg.qtd_clientes)}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-slate-500 mb-0.5">Impacto estimado</p>
+                  <p className={`text-lg font-semibold ${config.color}`}>{formatCurrency(seg.impacto_estimado)}</p>
+                </div>
+              </div>
+              <p className="text-sm text-slate-400 line-clamp-2">{seg.acao}</p>
+              <p className={`text-xs mt-3 font-medium ${config.color} group-hover:underline`}>
+                Ver detalhes →
               </p>
-              <p style={{ fontSize: '1.45rem', fontFamily: 'ui-monospace, monospace', fontWeight: 500, color: 'var(--text-1)', letterSpacing: '-0.02em' }}>
-                {value}
-              </p>
-            </div>
-          ))}
-        </div>
+            </Link>
+          )
+        })}
+      </div>
 
-        {/* Section header */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 18 }}>
-          <span style={{ fontSize: 10, fontFamily: 'ui-monospace, monospace', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'var(--text-3)', flexShrink: 0 }}>
-            Segmentos
-          </span>
-          <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
-          <span style={{ fontSize: 10, fontFamily: 'ui-monospace, monospace', color: 'var(--text-3)', flexShrink: 0 }}>
-            {summary.segmentos.length} clusters
-          </span>
-        </div>
-
-        {/* Segment cards */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 52 }}>
-          {summary.segmentos.map((seg) => {
-            const config = PERSONA_CONFIG[seg.persona] ?? { accentColor: '#64748b', priority: '', priorityNum: '' }
-            return (
-              <Link
-                key={seg.cluster}
-                href={`/segment/${encodeURIComponent(seg.persona)}`}
-                className="seg-card"
-                style={{
-                  display: 'block',
-                  background: 'var(--surface)',
-                  borderRadius: 10,
-                  border: '1px solid var(--border)',
-                  borderLeft: `3px solid ${config.accentColor}`,
-                  padding: '24px 26px',
-                  textDecoration: 'none',
-                  cursor: 'pointer',
-                }}
-              >
-                {/* Card header */}
-                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 18 }}>
-                  <h3 style={{ fontSize: '1.05rem', fontWeight: 600, color: 'var(--text-1)', lineHeight: 1.3 }}>
-                    {seg.persona}
-                  </h3>
-                  <span style={{
-                    fontSize: 10,
-                    fontFamily: 'ui-monospace, monospace',
-                    padding: '3px 8px',
-                    borderRadius: 4,
-                    border: `1px solid ${config.accentColor}40`,
-                    background: `${config.accentColor}12`,
-                    color: config.accentColor,
-                    flexShrink: 0,
-                    marginLeft: 12,
-                  }}>
-                    {config.priorityNum}
-                  </span>
-                </div>
-
-                {/* Divider */}
-                <div style={{ height: 1, background: 'var(--border)', marginBottom: 18 }} />
-
-                {/* Metrics */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 18 }}>
-                  <div>
-                    <p style={{ fontSize: 10, fontFamily: 'ui-monospace, monospace', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-3)', marginBottom: 4 }}>
-                      Clientes
-                    </p>
-                    <p style={{ fontSize: '1.2rem', fontFamily: 'ui-monospace, monospace', color: 'var(--text-1)' }}>
-                      {formatNumber(seg.qtd_clientes)}
-                    </p>
-                  </div>
-                  <div>
-                    <p style={{ fontSize: 10, fontFamily: 'ui-monospace, monospace', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-3)', marginBottom: 4 }}>
-                      Impacto Est.
-                    </p>
-                    <p style={{ fontSize: '1.2rem', fontFamily: 'ui-monospace, monospace', color: config.accentColor }}>
-                      {formatCurrency(seg.impacto_estimado)}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Action text */}
-                <p style={{ fontSize: '0.8rem', color: 'var(--text-2)', lineHeight: 1.6, marginBottom: 16, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                  {seg.acao}
-                </p>
-
-                {/* CTA */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, fontFamily: 'ui-monospace, monospace', color: 'var(--text-3)' }}>
-                  <span>Ver análise completa</span>
-                  <span>→</span>
-                </div>
-              </Link>
-            )
-          })}
-        </div>
-
-        {/* Simulator link */}
-        <div style={{ borderTop: '1px solid var(--border)', paddingTop: 28, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <p style={{ fontSize: '0.8rem', color: 'var(--text-3)', fontFamily: 'ui-monospace, monospace' }}>
-            Classifique um cliente individualmente pelo modelo treinado
-          </p>
-          <Link
-            href="/simulate"
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8,
-              background: 'var(--surface)',
-              border: '1px solid var(--border-hover)',
-              borderRadius: 8,
-              padding: '9px 18px',
-              fontSize: 12,
-              fontFamily: 'ui-monospace, monospace',
-              color: 'var(--text-2)',
-              textDecoration: 'none',
-              transition: 'border-color 0.15s, color 0.15s',
-            }}
-          >
-            Classificar cliente
-            <span>→</span>
-          </Link>
-        </div>
-
-      </main>
-    </div>
+      <div className="mt-8 text-center">
+        <Link
+          href="/simulate"
+          className="inline-block bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 hover:text-white text-sm font-medium px-6 py-3 rounded-xl transition-colors"
+        >
+          Classificar novo cliente →
+        </Link>
+      </div>
+    </main>
   )
 }
